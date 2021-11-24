@@ -40,20 +40,20 @@ class HIST(nn.Module):
                 dropout=dropout,
             )
 
-        self.fc_es = nn.Linear(hidden_size, hidden_size)
-        torch.nn.init.xavier_uniform_(self.fc_es.weight)
-        self.fc_is = nn.Linear(hidden_size, hidden_size)
-        torch.nn.init.xavier_uniform_(self.fc_is.weight)
+        self.fc_ps = nn.Linear(hidden_size, hidden_size)
+        torch.nn.init.xavier_uniform_(self.fc_ps.weight)
+        self.fc_hs = nn.Linear(hidden_size, hidden_size)
+        torch.nn.init.xavier_uniform_(self.fc_hs.weight)
 
-        self.fc_es_fore = nn.Linear(hidden_size, hidden_size)
-        torch.nn.init.xavier_uniform_(self.fc_es_fore.weight)
-        self.fc_is_fore = nn.Linear(hidden_size, hidden_size)
-        torch.nn.init.xavier_uniform_(self.fc_is_fore.weight)
+        self.fc_ps_fore = nn.Linear(hidden_size, hidden_size)
+        torch.nn.init.xavier_uniform_(self.fc_ps_fore.weight)
+        self.fc_hs_fore = nn.Linear(hidden_size, hidden_size)
+        torch.nn.init.xavier_uniform_(self.fc_hs_fore.weight)
 
-        self.fc_es_back = nn.Linear(hidden_size, hidden_size)
-        torch.nn.init.xavier_uniform_(self.fc_es_back.weight)
-        self.fc_is_back = nn.Linear(hidden_size, hidden_size)
-        torch.nn.init.xavier_uniform_(self.fc_is_back.weight)
+        self.fc_ps_back = nn.Linear(hidden_size, hidden_size)
+        torch.nn.init.xavier_uniform_(self.fc_ps_back.weight)
+        self.fc_hs_back = nn.Linear(hidden_size, hidden_size)
+        torch.nn.init.xavier_uniform_(self.fc_hs_back.weight)
         self.fc_indi = nn.Linear(hidden_size, hidden_size)
         torch.nn.init.xavier_uniform_(self.fc_indi.weight)
 
@@ -61,8 +61,8 @@ class HIST(nn.Module):
         self.softmax_s2t = torch.nn.Softmax(dim = 0)
         self.softmax_t2s = torch.nn.Softmax(dim = 1)
         
-        self.fc_out_es = nn.Linear(hidden_size, 1)
-        self.fc_out_is = nn.Linear(hidden_size, 1)
+        self.fc_out_ps = nn.Linear(hidden_size, 1)
+        self.fc_out_hs = nn.Linear(hidden_size, 1)
         self.fc_out_indi = nn.Linear(hidden_size, 1)
         self.fc_out = nn.Linear(hidden_size, 1)
         self.K = K
@@ -103,52 +103,51 @@ class HIST(nn.Module):
         concept_to_stock = cal_cos_similarity(x_hidden, hidden) 
         concept_to_stock = self.softmax_t2s(concept_to_stock)
 
-        e_shared_info = concept_to_stock.mm(hidden)
-        e_shared_info = self.fc_es(e_shared_info)
+        p_shared_info = concept_to_stock.mm(hidden)
+        p_shared_info = self.fc_ps(p_shared_info)
 
-        e_shared_back = self.fc_es_back(e_shared_info)
-        output_es = self.fc_es_fore(e_shared_info)
-        output_es = self.leaky_relu(output_es)
+        p_shared_back = self.fc_ps_back(p_shared_info)
+        output_ps = self.fc_ps_fore(p_shared_info)
+        output_ps = self.leaky_relu(output_ps)
 
-        pred_es = self.fc_out_es(output_es).squeeze()
+        pred_ps = self.fc_out_ps(output_ps).squeeze()
         
         # Hidden Concept Module
-        i_shared_info = x_hidden - e_shared_back
-        hidden = i_shared_info
-        i_stock_to_concept = cal_cos_similarity(i_shared_info, hidden)
+        h_shared_info = x_hidden - p_shared_back
+        hidden = h_shared_info
+        h_stock_to_concept = cal_cos_similarity(h_shared_info, hidden)
 
-        dim = i_stock_to_concept.shape[0]
-        diag = i_stock_to_concept.diagonal(0)
-        i_stock_to_concept = i_stock_to_concept * (torch.ones(dim, dim) - torch.eye(dim)).to(device)
+        dim = h_stock_to_concept.shape[0]
+        diag = h_stock_to_concept.diagonal(0)
+        h_stock_to_concept = h_stock_to_concept * (torch.ones(dim, dim) - torch.eye(dim)).to(device)
         # row = torch.linspace(0,dim-1,dim).to(device).long()
-        # column = i_stock_to_concept.argmax(1)
+        # column = h_stock_to_concept.argmax(1)
         row = torch.linspace(0, dim-1, dim).reshape([-1, 1]).repeat(1, self.K).reshape(1, -1).long().to(device)
-        column = torch.topk(i_stock_to_concept, self.K, dim = 1)[1].reshape(1, -1)
-        mask = torch.zeros([i_stock_to_concept.shape[0], i_stock_to_concept.shape[1]], device = i_stock_to_concept.device)
+        column = torch.topk(h_stock_to_concept, self.K, dim = 1)[1].reshape(1, -1)
+        mask = torch.zeros([h_stock_to_concept.shape[0], h_stock_to_concept.shape[1]], device = h_stock_to_concept.device)
         mask[row, column] = 1
-        i_stock_to_concept = i_stock_to_concept * mask
-        i_stock_to_concept = i_stock_to_concept + torch.diag_embed((i_stock_to_concept.sum(0)!=0).float()*diag)
-        hidden = torch.t(i_shared_info).mm(i_stock_to_concept).t()
+        h_stock_to_concept = h_stock_to_concept * mask
+        h_stock_to_concept = h_stock_to_concept + torch.diag_embed((h_stock_to_concept.sum(0)!=0).float()*diag)
+        hidden = torch.t(h_shared_info).mm(h_stock_to_concept).t()
         hidden = hidden[hidden.sum(1)!=0]
 
-        i_concept_to_stock = cal_cos_similarity(i_shared_info, hidden)
-        i_concept_to_stock = self.softmax_t2s(i_concept_to_stock)
-        i_shared_info = i_concept_to_stock.mm(hidden)
-        i_shared_info = self.fc_is(i_shared_info)
+        h_concept_to_stock = cal_cos_similarity(h_shared_info, hidden)
+        h_concept_to_stock = self.softmax_t2s(h_concept_to_stock)
+        h_shared_info = h_concept_to_stock.mm(hidden)
+        h_shared_info = self.fc_hs(h_shared_info)
 
-        i_shared_back = self.fc_is_back(i_shared_info)
-        output_is = self.fc_is_fore(i_shared_info)
-        output_is = self.leaky_relu(output_is)
-        pred_is = self.fc_out_is(output_is).squeeze()
+        h_shared_back = self.fc_hs_back(h_shared_info)
+        output_hs = self.fc_hs_fore(h_shared_info)
+        output_hs = self.leaky_relu(output_hs)
+        pred_hs = self.fc_out_hs(output_hs).squeeze()
 
         # Individual Information Module
-        individual_info  = x_hidden - e_shared_back - i_shared_back
+        individual_info  = x_hidden - p_shared_back - h_shared_back
         output_indi = individual_info
         output_indi = self.fc_indi(output_indi)
         output_indi = self.leaky_relu(output_indi)
         pred_indi = self.fc_out_indi(output_indi).squeeze()
         # Stock Trend Prediction
-        all_info = output_es + output_is + output_indi
+        all_info = output_ps + output_hs + output_indi
         pred_all = self.fc_out(all_info).squeeze()
         return pred_all
-
