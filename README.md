@@ -12,7 +12,7 @@ The implementation of the paper "[HIST: A Graph-based Framework for Stock Trend 
 	git clone https://github.com/microsoft/qlib.git && cd qlib
 	python setup.py install
 
-	# Download the stock features of Alpha360
+	# Download the stock features of Alpha360 from Qlib
 	python scripts/get_data.py qlib_data --target_dir ~/.qlib/qlib_data/cn_data --region cn --version v2
 	```
 ## Reproduce the stock trend forecasting results
