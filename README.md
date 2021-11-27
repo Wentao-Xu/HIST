@@ -5,7 +5,7 @@ The implementation of the paper "[HIST: A Graph-based Framework for Stock Trend 
 ## Environment
 1. Install python3.7, 3.8 or 3.9. 
 2. Install the requirements in [requirements.txt](https://github.com/WebConf2022-Submission4/Code/blob/main/requirements.txt).
-3. Install the [Qlib](https://github.com/microsoft/qlib) and download the data:
+3. Install the quantitative investment platform [Qlib](https://github.com/microsoft/qlib) and download the data from Qlib:
 	```
 	# install Qlib from source
 	pip install --upgrade  cython
