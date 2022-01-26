@@ -97,3 +97,14 @@ python learn.py --model_name Transformer --data_set csi300 --hidden_size 32 --nu
 * ALSTM+TRA 
 
 	We reproduce the ALSTM+TRA with its [source code](https://github.com/microsoft/qlib/tree/main/examples/benchmarks/TRA).
+
+## Citation
+Please cite the following paper if you use this code in your work.
+```
+@article{xu2021hist,
+  title={HIST: A Graph-based Framework for Stock Trend Forecasting via Mining Concept-Oriented Shared Information},
+  author={Xu, Wentao and Liu, Weiqing and Wang, Lewen and Xia, Yingce and Bian, Jiang and Yin, Jian and Liu, Tie-Yan},
+  journal={arXiv preprint arXiv:2110.13716},
+  year={2021}
+}
+```
