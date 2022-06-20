@@ -8,7 +8,7 @@ class DataLoader:
         assert len(df_feature) == len(df_label)
 
         self.df_feature = df_feature.values
-        self.df_label = df_label.values
+	self.df_label = df_label.values
 	self.df_market_value = df_market_value
 	self.df_stock_index = df_stock_index
 	self.device = device
